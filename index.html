@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>星空のある風景カレンダー 2027</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="星暦2027">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<link rel="apple-touch-icon" href="https://starwalker0202.github.io/star-gallery-/apple-touch-icon.png">
+<link rel="icon" href="https://starwalker0202.github.io/star-gallery-/apple-touch-icon.png">
 <style>
   :root{
     --bg:#0a0e1a; --panel:#141d33; --ink:#eef1fa; --sub:#9fb0d8; --muted:#6b7aa3;
@@ -26,7 +33,7 @@
   .scrim-top{position:absolute; top:0; left:0; right:0; height:120px; background:linear-gradient(#000b 0%, transparent 100%); pointer-events:none; z-index:2;}
   .scrim-bot{position:absolute; bottom:0; left:0; right:0; height:300px; background:linear-gradient(transparent 0%, #000a 55%, #000d 100%); pointer-events:none; z-index:2;}
 
-  .topbar{position:absolute; top:0; left:0; right:0; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; z-index:4;}
+  .topbar{position:absolute; top:0; left:0; right:0; padding:calc(18px + env(safe-area-inset-top)) 20px 18px; display:flex; justify-content:space-between; align-items:center; z-index:4;}
   .ym{letter-spacing:4px; font-size:13px; color:var(--sub);}
   .navbtns button{background:rgba(255,255,255,.12); border:none; color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; margin-left:6px;}
   .navbtns button:active{transform:scale(.94);}
