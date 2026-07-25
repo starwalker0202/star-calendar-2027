@@ -151,17 +151,17 @@
    ・caption(一言)は自由に書き換えてください。<br> で改行。
    ========================================================================= */
 const MONTHS = [
-  {photos:[], caption:"寒星の夜。<br>凍てつく空に、ひときわ澄んだ星空。"},        // 1月
-  {photos:[], caption:"まだ冬の星座が主役。<br>でも明け方には天の川が見えてきます。"},      // 2月
-  {photos:[], caption:"春の気配。<br>やわらかな大気に、星がにじむ。"},            // 3月
+  {photos:[], caption:"寒星の夜。<br>凍てつく空に、ひときわ澄んだ光。"},        // 1月
+  {photos:[], caption:"冬の名残の星々。<br>吐く息の向こうに、オリオン。"},      // 2月
+  {photos:[], caption:"春の宵。<br>やわらかな大気に、星がにじむ。"},            // 3月
   {photos:[], caption:"花と星と。<br>夜風に、季節がほどけていく。"},            // 4月
-  {photos:[], caption:"新緑の森に、天の川が昇る。<br>夏のはじまりの匂い。"},    // 5月
-  {photos:[], caption:"短夜。<br>梅雨の合間の空に天の川。"},                  // 6月
-  {photos:[], caption:"真夏の天の川。<br>夜空には雲のようなアーチが。"},            // 7月
+  {photos:[], caption:"新緑の谷に、天の川が昇る。<br>夏のはじまりの匂い。"},    // 5月
+  {photos:[], caption:"短夜。<br>薄明の前に、ひとつ流れる。"},                  // 6月
+  {photos:[], caption:"真夏の天の川。<br>山の稜線が、静かに眠る。"},            // 7月
   {photos:[], caption:"夏の終わりの空。<br>流星群が、夜を横切る。"},            // 8月
-  {photos:[], caption:"秋の気配。<br>虫の音の上に、星が満ちる。"},          // 9月
+  {photos:[], caption:"秋の澄んだ夜。<br>虫の音の上に、星が満ちる。"},          // 9月
   {photos:[], caption:"深まる秋。<br>冷たい空気が、星をとぎ澄ます。"},          // 10月
-  {photos:[], caption:"冬の入口。<br>オリオン座が見える時間が日に日に早まる。"},                // 11月
+  {photos:[], caption:"冬の入口。<br>早い日暮れに、星が近い。"},                // 11月
   {photos:[], caption:"一年の終わりの空。<br>凛と冴えた、冬の大三角。"}         // 12月
 ];
 
@@ -231,8 +231,8 @@ function photosFor(m){
 }
 
 let now=new Date();
-let curMonth=(now.getFullYear()===YEAR)?now.getMonth():0;
-let curDay=(now.getFullYear()===YEAR)?now.getDate():1;
+let curMonth=now.getMonth();
+let curDay=Math.min(now.getDate(), new Date(YEAR,now.getMonth()+1,0).getDate());
 function isToday(m,d){return now.getFullYear()===YEAR&&now.getMonth()===m&&now.getDate()===d;}
 
 /* ---- スライドショー ---- */
