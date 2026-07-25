@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>星空のある風景カレンダー 2027</title>
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#141d33; --ink:#eef1fa; --sub:#9fb0d8; --muted:#6b7aa3;
+    --line:#1c2540; --accent:#f0c674;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--ink); font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    overflow:hidden;
+  }
+  .app{position:fixed; inset:0; display:flex; flex-direction:column; max-width:520px; margin:0 auto;}
+
+  /* ---- 写真ステージ(どの向きでも切れない) ---- */
+  .stage{position:relative; flex:1; overflow:hidden; background:#05070e;}
+  .slide{position:absolute; inset:0; opacity:0; transition:opacity 1.4s ease;}
+  .slide.show{opacity:1;}
+  .slide .fill{position:absolute; inset:0; background-size:cover; background-position:center; filter:blur(28px) brightness(.45); transform:scale(1.15);}
+  .slide .pic{position:absolute; inset:0; background-size:contain; background-position:center; background-repeat:no-repeat;}
+  .scrim-top{position:absolute; top:0; left:0; right:0; height:120px; background:linear-gradient(#000b 0%, transparent 100%); pointer-events:none; z-index:2;}
+  .scrim-bot{position:absolute; bottom:0; left:0; right:0; height:300px; background:linear-gradient(transparent 0%, #000a 55%, #000d 100%); pointer-events:none; z-index:2;}
+
+  .topbar{position:absolute; top:0; left:0; right:0; padding:18px 20px; display:flex; justify-content:space-between; align-items:center; z-index:4;}
+  .ym{letter-spacing:4px; font-size:13px; color:var(--sub);}
+  .navbtns button{background:rgba(255,255,255,.12); border:none; color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; margin-left:6px;}
+  .navbtns button:active{transform:scale(.94);}
+  .dots{position:absolute; top:54px; left:0; right:0; text-align:center; z-index:4;}
+  .dots i{display:inline-block; width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.28); margin:0 3px;}
+  .dots i.on{background:var(--accent);}
+
+  .datewrap{position:absolute; left:0; right:0; bottom:210px; text-align:center; z-index:3;}
+  .day{font-size:88px; font-weight:300; line-height:1; text-shadow:0 2px 30px #000c;}
+  .dow{margin-top:6px; font-size:14px; color:var(--sub); letter-spacing:2px;}
+  .today-badge{display:inline-block; margin-top:12px; font-size:11px; color:#0a0e1a; background:var(--accent); padding:3px 12px; border-radius:20px; letter-spacing:1px;}
+
+  .caption{position:absolute; left:24px; right:24px; bottom:130px; z-index:3; text-align:center; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:15px; line-height:2; color:#e8ecf7; text-shadow:0 1px 16px #000d;}
+  .tonight{position:absolute; left:18px; right:18px; bottom:118px; z-index:4; background:rgba(20,29,51,.78); border:.5px solid #2a3760; border-radius:14px; padding:13px 16px; text-align:center; display:none;}
+  .tonight .lbl{color:var(--accent); font-size:11px; letter-spacing:1px;}
+  .tonight .ev{font-size:16px; font-weight:500; margin-top:3px;}
+  .tonight .note{font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:12px; color:var(--sub); margin-top:4px; line-height:1.7;}
+
+  /* ---- 下タブ(常に最前面) ---- */
+  .tabbar{display:flex; justify-content:space-around; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); background:#080c16; border-top:.5px solid var(--line); z-index:30;}
+  .tabbar button{background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; flex:1;}
+  .tabbar button span{font-size:10px; letter-spacing:1px;}
+  .tabbar button.on{color:var(--ink);}
+
+  /* ---- カレンダーシート ---- */
+  .sheet{position:absolute; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:20; transform:translateY(100%); transition:transform .35s cubic-bezier(.2,.8,.2,1); overflow-y:auto; padding-bottom:72px;}
+  .sheet.open{transform:translateY(0);}
+  .sheet{scrollbar-width:none;}
+  .sheet::-webkit-scrollbar{display:none;}
+  .sheet-hero{position:relative; height:318px; overflow:hidden; background:#05070e; display:flex; flex-direction:column; justify-content:flex-end;}
+  .sheet-hero .hslide{position:absolute; inset:0; opacity:0; transition:opacity 1.2s ease;}
+  .sheet-hero .hslide.show{opacity:1;}
+  .sheet-hero .hfill{position:absolute; inset:0; background-size:cover; background-position:center; filter:blur(26px) brightness(.5); transform:scale(1.15);}
+  .sheet-hero .hpic{position:absolute; inset:0; background-size:contain; background-position:center; background-repeat:no-repeat;}
+  .sheet-hero .hscrim{position:absolute; inset:0; background:linear-gradient(transparent 45%, rgba(10,14,26,.5) 78%, var(--bg) 100%);}
+  .sheet-head{position:relative; padding:0 20px 4px; display:flex; align-items:flex-end; justify-content:space-between;}
+  .sheet-head .t{font-size:20px; letter-spacing:2px; text-shadow:0 1px 12px #000b;}
+  .sheet-head .arrows button{background:rgba(255,255,255,.14); border:none; color:var(--ink); width:34px; height:34px; border-radius:50%; font-size:16px; margin-left:6px; cursor:pointer;}
+  .hero-cap{position:relative; padding:6px 20px 12px; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:12px; color:var(--sub); line-height:1.7; text-shadow:0 1px 12px #000b;}
+  .cal{padding:6px 16px 8px;}
+  .dow-row,.grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center;}
+  .dow-row span{font-size:11px; color:var(--muted); padding:6px 0;}
+  .grid .cell{position:relative; padding:7px 0; font-size:14px; color:#c7d0e8; border-radius:9px; cursor:pointer;}
+  .grid .cell.sun{color:#e0968f;} .grid .cell.sat{color:#8fb4e0;}
+  .grid .cell.today{background:#2c3a6b; color:#fff;}
+  .grid .cell.sel{outline:1px solid var(--accent);}
+  .grid .cell .dot{position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%;}
+  .dot.moon{background:var(--accent);} .dot.star{background:#8fb4e0;}
+  .detail{margin:4px 16px 12px; background:var(--panel); border:.5px solid var(--line); border-radius:14px; padding:13px 16px; min-height:auto;}
+  .detail .d-date{font-size:13px; color:var(--sub); letter-spacing:1px;}
+  .detail .d-moon{margin-top:8px; font-size:14px;}
+  .detail .d-ev{margin-top:10px;}
+  .detail .d-ev .e{font-size:15px; font-weight:500; color:var(--accent);}
+  .detail .d-ev .n{font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:13px; color:var(--sub); margin-top:3px; line-height:1.7;}
+  .legend{display:flex; gap:16px; padding:0 20px 12px; color:var(--muted); font-size:11px;}
+  .legend i{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:1px;}
+  .credit{text-align:center; padding:0 20px 14px; color:var(--muted); font-size:11px; line-height:1.8;}
+  .credit a{color:var(--sub);}
+
+  /* PC・大きな画面では、中央にスマホ大の枠として表示 */
+  @media (min-width:640px){
+    body{display:flex; align-items:center; justify-content:center; background:#05070e;}
+    .app{position:relative; inset:auto; margin:0; width:392px; height:min(96vh,840px); border-radius:26px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,.6); border:1px solid var(--line);}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <div id="slides"></div>
+    <div class="scrim-top"></div>
+    <div class="scrim-bot"></div>
+    <div class="topbar">
+      <div class="ym" id="ym">2027</div>
+      <div class="navbtns"><button id="prevM">‹</button><button id="nextM">›</button></div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="datewrap">
+      <div class="day" id="dayNum">1</div>
+      <div class="dow" id="dow">木曜日</div>
+      <div id="todayBadge"></div>
+    </div>
+    <div class="caption" id="caption"></div>
+    <div class="tonight" id="tonight">
+      <div class="lbl">✦ 今夜</div>
+      <div class="ev" id="tonightEv"></div>
+      <div class="note" id="tonightNote"></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="on" id="tabPhoto">✦<span>今日</span></button>
+    <button id="tabCal">▦<span>カレンダー</span></button>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheet-hero" id="sheetHero">
+      <div id="heroSlides"></div>
+      <div class="hscrim"></div>
+      <div class="sheet-head">
+        <div class="t" id="sheetYm">2027年1月</div>
+        <div class="arrows"><button id="sPrev">‹</button><button id="sNext">›</button></div>
+      </div>
+      <div class="hero-cap" id="heroCap"></div>
+    </div>
+    <div class="cal">
+      <div class="dow-row"><span style="color:#e0968f">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span style="color:#8fb4e0">土</span></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="detail" id="detail"></div>
+    <div class="legend"><span><i class="dot moon" style="background:#f0c674"></i>月の節目</span><span><i class="dot star" style="background:#8fb4e0"></i>流星群など</span></div>
+    <div class="credit">星空のある風景カレンダー 2027<br>写真・文 ― 前田徳彦<br><a href="https://lit.link/starwalker0202">starwalker0202 のすべてのリンク →</a></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   写真は既存ギャラリー(star-gallery-)から自動で読み込まれます(下の PHOTO_REPO)。
+   向こうに「月_タイトル.jpg」で写真を置けば、この暦にも自動で反映されます。
+   ・特定の月だけ別の写真を使いたいときは、その月の photos にURLを入れると優先されます。
+   ・photos に複数入れると、その月の中で自動スライドショーになります。
+   ・caption(一言)は自由に書き換えてください。<br> で改行。
+   ========================================================================= */
+const MONTHS = [
+  {photos:[], caption:"寒星の夜。<br>凍てつく空に、ひときわ澄んだ光。"},        // 1月
+  {photos:[], caption:"冬の名残の星々。<br>吐く息の向こうに、オリオン。"},      // 2月
+  {photos:[], caption:"春の宵。<br>やわらかな大気に、星がにじむ。"},            // 3月
+  {photos:[], caption:"花と星と。<br>夜風に、季節がほどけていく。"},            // 4月
+  {photos:[], caption:"新緑の谷に、天の川が昇る。<br>夏のはじまりの匂い。"},    // 5月
+  {photos:[], caption:"短夜。<br>薄明の前に、ひとつ流れる。"},                  // 6月
+  {photos:[], caption:"真夏の天の川。<br>山の稜線が、静かに眠る。"},            // 7月
+  {photos:[], caption:"夏の終わりの空。<br>流星群が、夜を横切る。"},            // 8月
+  {photos:[], caption:"秋の澄んだ夜。<br>虫の音の上に、星が満ちる。"},          // 9月
+  {photos:[], caption:"深まる秋。<br>冷たい空気が、星をとぎ澄ます。"},          // 10月
+  {photos:[], caption:"冬の入口。<br>早い日暮れに、星が近い。"},                // 11月
+  {photos:[], caption:"一年の終わりの空。<br>凛と冴えた、冬の大三角。"}         // 12月
+];
+
+const SHOWERS = {
+  "1-4":   {ev:"しぶんぎ座流星群 極大", note:"新年の空を、静かに横切る光。"},
+  "4-22":  {ev:"こと座流星群 極大",     note:"春の夜半、東の空を見上げて。"},
+  "5-6":   {ev:"みずがめ座η流星群 極大", note:"明け方近く、低い空に。"},
+  "8-12":  {ev:"ペルセウス座流星群 極大", note:"夜も更け、北東の空を見上げて。"},
+  "8-13":  {ev:"ペルセウス座流星群",     note:"前夜に続き、まだ流れる。"},
+  "10-21": {ev:"オリオン座流星群 極大",  note:"深夜、オリオンの傍らから。"},
+  "11-17": {ev:"しし座流星群 極大",      note:"未明の東空、放射点は獅子の首。"},
+  "12-14": {ev:"ふたご座流星群 極大",    note:"一年で最も豊かな流星の夜。"},
+  "12-22": {ev:"こぐま座流星群 極大",    note:"冬至の頃、北天の小さな群れ。"}
+};
+
+const DOW=["日曜日","月曜日","火曜日","水曜日","木曜日","金曜日","土曜日"];
+const YEAR=2027;
+
+function moonAge(date){const s=29.53058867;const known=Date.UTC(2000,0,6,18,14);let a=((date.getTime()-known)/86400000)%s;if(a<0)a+=s;return a;}
+function moonName(age){
+  if(age<1.0||age>28.5)return{n:"新月",milestone:true,note:"月のない、最も星の濃い夜。"};
+  if(Math.abs(age-14.76)<0.9)return{n:"満月",milestone:true,note:"煌々と、夜を照らす。"};
+  if(Math.abs(age-7.38)<0.8)return{n:"上弦の月",milestone:false,note:""};
+  if(Math.abs(age-22.15)<0.8)return{n:"下弦の月",milestone:false,note:""};
+  return{n:"月齢 "+age.toFixed(1),milestone:false,note:""};
+}
+function eventFor(m,d){return SHOWERS[m+"-"+d]||null;}
+
+function seeded(s){return function(){s=(s*9301+49297)%233280;return s/233280;};}
+function placeholder(monthIndex,variant){
+  const glow=["#1a2444","#1b2646","#213154","#26385a","#243654","#202f4c","#1c2946","#1e2b4a","#26385a","#212e4e","#1b2444","#19203c"][monthIndex];
+  const rnd=seeded(monthIndex*13+variant*97+7);
+  let stars="";
+  for(let i=0;i<150;i++){const x=(rnd()*100).toFixed(1),y=(rnd()*74).toFixed(1),r=(rnd()*1.6+0.3).toFixed(2),o=(rnd()*0.7+0.3).toFixed(2);stars+=`<circle cx='${x}%' cy='${y}%' r='${r}' fill='#eaf0ff' opacity='${o}'/>`;}
+  let big="";
+  for(let i=0;i<6;i++){const x=(rnd()*100).toFixed(1),y=(rnd()*52).toFixed(1);big+=`<circle cx='${x}%' cy='${y}%' r='4.5' fill='#fff' opacity='0.22'/><circle cx='${x}%' cy='${y}%' r='1.7' fill='#fff'/>`;}
+  let mw="";
+  for(let i=0;i<110;i++){const t=rnd();const x=(t*100).toFixed(1);const y=(72-t*56+(rnd()-0.5)*11).toFixed(1);const r=(rnd()*1.1+0.2).toFixed(2);const o=(rnd()*0.55+0.2).toFixed(2);mw+=`<circle cx='${x}%' cy='${y}%' r='${r}' fill='#dfe6ff' opacity='${o}'/>`;}
+  const ridge=605+variant*8;
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='520' height='760'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#04060d'/><stop offset='0.55' stop-color='#0a1022'/><stop offset='0.82' stop-color='${glow}'/><stop offset='1' stop-color='#05070e'/></linearGradient><filter id='soft'><feGaussianBlur stdDeviation='7'/></filter></defs><rect width='100%' height='100%' fill='url(#sky)'/><g opacity='0.45' filter='url(#soft)'><path d='M40,540 Q200,360 520,150 L520,235 Q230,430 90,600 Z' fill='#2a3a63'/></g>${mw}${stars}${big}<path d='M0,${ridge} L70,${ridge-48} L150,${ridge-8} L240,${ridge-54} L330,${ridge-14} L430,${ridge-42} L520,${ridge-6} L520,760 L0,760 Z' fill='#04060c'/></svg>`;
+  return "data:image/svg+xml;base64,"+btoa(svg);
+}
+/* ギャラリー(star-gallery-)と同じリポジトリから写真を自動で読み込みます。
+   写真は向こうの直下に「月_タイトル.jpg」形式で置くだけ。URL貼り付けは不要です。 */
+const PHOTO_REPO={user:"starwalker0202", repo:"star-gallery-", branch:"main"};
+const loadedPhotos={}; // 0-indexed month -> [url,...]
+function rawUrl(file){return `https://raw.githubusercontent.com/${PHOTO_REPO.user}/${PHOTO_REPO.repo}/${PHOTO_REPO.branch}/${encodeURIComponent(file)}`;}
+async function loadRepoPhotos(){
+  try{
+    const api=`https://api.github.com/repos/${PHOTO_REPO.user}/${PHOTO_REPO.repo}/contents/?ref=${PHOTO_REPO.branch}`;
+    const res=await fetch(api); if(!res.ok) return;
+    const items=await res.json();
+    const re=/^(\d{1,2})_(.+)\.(jpe?g|png)$/i; const tmp={};
+    items.filter(it=>it.type==="file").forEach(it=>{
+      const mm=it.name.match(re); if(!mm) return;
+      const month=parseInt(mm[1],10); if(month<1||month>12) return;
+      (tmp[month-1]=tmp[month-1]||[]).push({file:it.name,url:rawUrl(it.name)});
+    });
+    for(const k in tmp){ tmp[k].sort((a,b)=>a.file.localeCompare(b.file,"ja")); loadedPhotos[k]=tmp[k].map(p=>p.url); }
+    renderMain(); if(sheet.classList.contains('open')) renderSheet();
+  }catch(e){ /* 読み込めない場合はプレースホルダーのまま */ }
+}
+function photosFor(m){
+  if(MONTHS[m].photos&&MONTHS[m].photos.length) return MONTHS[m].photos;   // 手動指定があれば優先
+  if(loadedPhotos[m]&&loadedPhotos[m].length) return loadedPhotos[m];       // ギャラリーの写真
+  return [placeholder(m,0),placeholder(m,1),placeholder(m,2)];              // 無ければ星空プレースホルダー
+}
+
+let now=new Date();
+let curMonth=(now.getFullYear()===YEAR)?now.getMonth():0;
+let curDay=(now.getFullYear()===YEAR)?now.getDate():1;
+function isToday(m,d){return now.getFullYear()===YEAR&&now.getMonth()===m&&now.getDate()===d;}
+
+/* ---- スライドショー ---- */
+let slideTimer=null, slideIdx=0;
+function buildSlides(m){
+  clearInterval(slideTimer);
+  const pics=photosFor(m);
+  const box=document.getElementById('slides'); box.innerHTML='';
+  pics.forEach((src,i)=>{
+    const s=document.createElement('div'); s.className='slide'+(i===0?' show':'');
+    s.innerHTML=`<div class='fill' style="background-image:url('${src}')"></div><div class='pic' style="background-image:url('${src}')"></div>`;
+    box.appendChild(s);
+  });
+  // ドット表示
+  const dots=document.getElementById('dots');
+  dots.innerHTML = pics.length>1 ? pics.map((_,i)=>`<i class='${i===0?'on':''}'></i>`).join('') : '';
+  slideIdx=0;
+  if(pics.length>1){
+    slideTimer=setInterval(()=>{
+      const slides=box.children;
+      slides[slideIdx].classList.remove('show');
+      slideIdx=(slideIdx+1)%slides.length;
+      slides[slideIdx].classList.add('show');
+      [...dots.children].forEach((dt,i)=>dt.classList.toggle('on',i===slideIdx));
+    },5000);
+  }
+}
+
+function renderMain(){
+  const m=curMonth,d=curDay,date=new Date(YEAR,m,d);
+  buildSlides(m);
+  document.getElementById('ym').textContent=`${YEAR} . ${String(m+1).padStart(2,'0')}`;
+  document.getElementById('dayNum').textContent=d;
+  document.getElementById('dow').textContent=DOW[date.getDay()];
+  document.getElementById('caption').innerHTML=MONTHS[m].caption;
+  document.getElementById('todayBadge').innerHTML=isToday(m,d)?'<span class="today-badge">TODAY</span>':'';
+  const mn=moonName(moonAge(date)),ev=eventFor(m+1,d);
+  const t=document.getElementById('tonight'),cap=document.getElementById('caption');
+  if(ev){t.style.display='block';document.getElementById('tonightEv').textContent=ev.ev;document.getElementById('tonightNote').textContent=ev.note;cap.style.display='none';}
+  else if(mn.milestone){t.style.display='block';document.getElementById('tonightEv').textContent=mn.n;document.getElementById('tonightNote').textContent=mn.note;cap.style.display='none';}
+  else{t.style.display='none';cap.style.display='block';}
+}
+
+/* ---- カレンダーシート ---- */
+let sheetMonth=curMonth, selDay=1, heroTimer=null, heroIdx=0;
+function buildHeroSlides(m){
+  clearInterval(heroTimer);
+  const pics=photosFor(m);
+  const box=document.getElementById('heroSlides'); box.innerHTML='';
+  pics.forEach((src,i)=>{
+    const s=document.createElement('div'); s.className='hslide'+(i===0?' show':'');
+    s.innerHTML=`<div class="hfill" style="background-image:url('${src}')"></div><div class="hpic" style="background-image:url('${src}')"></div>`;
+    box.appendChild(s);
+  });
+  heroIdx=0;
+  if(pics.length>1){
+    heroTimer=setInterval(()=>{
+      const sl=box.children; sl[heroIdx].classList.remove('show');
+      heroIdx=(heroIdx+1)%sl.length; sl[heroIdx].classList.add('show');
+    },5000);
+  }
+}
+function renderSheet(){
+  document.getElementById('sheetYm').textContent=`${YEAR}年${sheetMonth+1}月`;
+  buildHeroSlides(sheetMonth);
+  document.getElementById('heroCap').innerHTML=MONTHS[sheetMonth].caption;
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  const first=new Date(YEAR,sheetMonth,1).getDay(),days=new Date(YEAR,sheetMonth+1,0).getDate();
+  for(let i=0;i<first;i++)grid.appendChild(document.createElement('div'));
+  for(let d=1;d<=days;d++){
+    const date=new Date(YEAR,sheetMonth,d),cell=document.createElement('div');cell.className='cell';
+    const wd=date.getDay();if(wd===0)cell.classList.add('sun');if(wd===6)cell.classList.add('sat');
+    if(isToday(sheetMonth,d))cell.classList.add('today');
+    cell.textContent=d;
+    const ev=eventFor(sheetMonth+1,d),mn=moonName(moonAge(date));
+    if(ev){const dot=document.createElement('div');dot.className='dot star';cell.appendChild(dot);}
+    else if(mn.milestone){const dot=document.createElement('div');dot.className='dot moon';cell.appendChild(dot);}
+    cell.onclick=()=>{selDay=d;renderDetail(d);[...grid.children].forEach(c=>c.classList&&c.classList.remove('sel'));cell.classList.add('sel');};
+    grid.appendChild(cell);
+  }
+  selDay=(sheetMonth===curMonth)?curDay:1;renderDetail(selDay);
+}
+function renderDetail(d){
+  const date=new Date(YEAR,sheetMonth,d),age=moonAge(date),mn=moonName(age),ev=eventFor(sheetMonth+1,d);
+  let html=`<div class="d-date">${YEAR}年${sheetMonth+1}月${d}日 (${DOW[date.getDay()]})</div>`;
+  html+=`<div class="d-moon">☾ ${mn.n}(月齢 ${age.toFixed(1)})</div>`;
+  if(ev)html+=`<div class="d-ev"><div class="e">✦ ${ev.ev}</div><div class="n">${ev.note}</div></div>`;
+  else if(mn.milestone&&mn.note)html+=`<div class="d-ev"><div class="n">${mn.note}</div></div>`;
+  document.getElementById('detail').innerHTML=html;
+}
+function jumpTo(m,d){curMonth=m;curDay=d;renderMain();closeSheet();}
+
+/* ---- 操作 ---- */
+function changeMonth(delta){curMonth=(curMonth+delta+12)%12;curDay=1;renderMain();}
+document.getElementById('prevM').onclick=()=>changeMonth(-1);
+document.getElementById('nextM').onclick=()=>changeMonth(1);
+
+const sheet=document.getElementById('sheet');
+function openSheet(){sheetMonth=curMonth;renderSheet();sheet.classList.add('open');setTab('cal');try{localStorage.setItem('view','cal');}catch(e){}}
+function closeSheet(){sheet.classList.remove('open');setTab('photo');clearInterval(heroTimer);try{localStorage.setItem('view','photo');}catch(e){}}
+document.getElementById('sPrev').onclick=()=>{sheetMonth=(sheetMonth+11)%12;renderSheet();};
+document.getElementById('sNext').onclick=()=>{sheetMonth=(sheetMonth+1)%12;renderSheet();};
+function setTab(which){document.getElementById('tabPhoto').classList.toggle('on',which==='photo');document.getElementById('tabCal').classList.toggle('on',which==='cal');}
+document.getElementById('tabPhoto').onclick=closeSheet;
+document.getElementById('tabCal').onclick=()=>{ sheet.classList.contains('open')?closeSheet():openSheet(); };
+
+let sx=0;
+const stage=document.getElementById('stage');
+stage.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+stage.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>60)changeMonth(dx<0?1:-1);},{passive:true});
+
+renderMain();
+try{ if(localStorage.getItem('view')==='cal') openSheet(); }catch(e){}
+loadRepoPhotos();
+</script>
+</body>
+</html>
